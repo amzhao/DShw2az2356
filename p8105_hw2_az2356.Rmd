@@ -1,0 +1,105 @@
+---
+title: "p8105_hw2_az2356"
+author: "Amelia Zhao"
+date: "9/19/2019"
+output: github_document
+---
+# This is my markdown file for Homework 2.
+
+# Problem 1
+
+Setting up the necessary packages.
+```{r}
+library(readxl)
+library(tidyverse)
+```
+
+Working on the Mr. Trash Wheel data:
+
+- Creating a relative directory
+
+- Identifying the Mr. Trash Wheel sheet within the excel file
+
+- Removing rows without dumpster-specific data (totals) and tidying data
+```{r}
+
+"./data/trashwheel.xlsx"
+
+trashwheel <- 
+  read_excel("data/trashwheel.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N408") %>% 
+  janitor::clean_names(dat = .) %>%
+  rename(.data = ., volume = volume_cubic_yards, styrofoam = polystyrene, weight = weight_tons) %>%
+  drop_na(dumpster)
+  mutate(
+    trashwheel, sports_balls = as.integer(sports_balls)
+    )
+
+```
+
+
+
+Working on the 2017 and 2018 Precipitation data:
+
+- Creating a year variable, omitting rows without precipitation data
+
+- Combining the 2017 and 2018 data, converting month from a numeric to a character variable with the month name
+
+```{r}
+
+rain2017 <- 
+  read_excel("data/trashwheel.xlsx", sheet = "2017 Precipitation", range = "A2:B14") %>% 
+  janitor::clean_names(dat = .) %>% 
+  rename(.data = ., inchesrain = total) %>% 
+  mutate(year = 2017)
+
+rain2018 <-
+  read_excel("data/trashwheel.xlsx", sheet = "2018 Precipitation", range = "A2:B14") %>% 
+  janitor::clean_names(dat = .) %>% 
+  rename(.data = ., inchesrain = total) %>% 
+  mutate(year = 2018)
+
+rain2yr = 
+  bind_rows(rain2017, rain2018) %>% 
+  mutate(month = month.name[month])
+
+```
+
+Mr. Trash Wheel has been hard at work! In 5 years (May 2014 to June 2019), Mr. Trash Wheel has collected `r sum(trashwheel$weight)` pounds of trash from the Baltimore Inner Harbor! From the trash collected and put into Mr. Trash Wheel's dumpster, the median number of sports balls was `r median(trashwheel$sports_balls)`, and the average number of chip bags was `r mean(trashwheel$chip_bags)`. That's a lot of chips. 
+
+From the precipitation data collected, we can see that there were `r sum(rain2018$inchesrain)` inches of rain in 2018, compared to `r sum(rain2017$inchesrain)` in 2017. 2018 was a wet year!
+
+
+
+
+# Problem 2
+```{r}
+## Pols data: the number of politicians who are Republican or Democrat at any given month
+"./data/538data/pols-month.csv"
+polsmonth = read_csv("data/538data/pols-month.csv")
+
+## Unemployment data: unemployment percentage in each month of each year
+"./data/538data/unemployment.csv"
+unemploy = read_csv("data/538data/unemployment.csv")
+
+## S & P stock index: closing values at the beginning of each month
+"./data/538data/snp.csv"
+snp = read_csv("data/538data/snp.csv")
+
+
+```
+
+
+
+# Problem 3
+
+```{r}
+## Baby names data: popularity of baby names.
+"./data/babynames.csv"
+babynames = read_csv(file = "data/babynames.csv")
+
+
+```
+
+
+
+
