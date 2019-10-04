@@ -157,8 +157,41 @@ All of the observations were kept. However, S&P is missing for many timepoints, 
 ```{r}
 ## Baby names data: popularity of baby names.
 "./data/babynames.csv"
-babynames = read_csv(file = "data/babynames.csv")
 
+babynames <- 
+  read_csv("data/babynames.csv") %>% 
+  janitor::clean_names(dat = .) %>%
+  rename(.data = ., name = childs_first_name) %>%
+  distinct(.data = .) %>% 
+  arrange(year_of_birth) %>% 
+  mutate(
+    ethnicity = case_when(
+      ethnicity == "ASIAN AND PACI" ~ "Asian and Pacific Islander",
+      ethnicity == "ASIAN AND PACIFIC ISLANDER" ~ "Asian and Pacific Islander",
+      ethnicity == "BLACK NON HISP" ~ "Black Non Hispanic",
+      ethnicity == "BLACK NON HISPANIC" ~ "Black Non Hispanic",
+      ethnicity == "HISPANIC" ~ "Hispanic",
+      ethnicity == "WHITE NON HISP" ~ "White Non Hispanic",
+      ethnicity == "WHITE NON HISPANIC" ~ "White Non Hispanic"
+      ),
+    gender = str_to_title(gender),
+    name = str_to_title(name)
+  ) 
+
+babynames %>% 
+filter(name == "Olivia") %>%
+  select(-count, -gender) %>%
+  pivot_wider(names_from = year_of_birth,
+              values_from = rank)
+
+babynames %>%
+filter(gender == "Male", rank == 1) %>%
+  select(-count) %>%
+  pivot_wider(names_from = year_of_birth,
+              values_from = rank)
+
+nameplot = filter(babynames, gender == "Male", ethnicity == "White Non Hispanic", year_of_birth == "2016")
+ggplot(nameplot, aes(x = rank, y = count)) + geom_point(colour = "blue") 
 
 ```
 
