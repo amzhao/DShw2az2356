@@ -10,8 +10,10 @@ output: github_document
 
 Setting up the necessary packages.
 ```{r}
+
 library(readxl)
 library(tidyverse)
+
 ```
 
 Working on the Mr. Trash Wheel data:
@@ -21,6 +23,7 @@ Working on the Mr. Trash Wheel data:
 - Identifying the Mr. Trash Wheel sheet within the excel file
 
 - Removing rows without dumpster-specific data (totals) and tidying data
+
 ```{r}
 
 "./data/trashwheel.xlsx"
@@ -52,11 +55,13 @@ rain2017 <-
   rename(.data = ., inchesrain = total) %>% 
   mutate(year = 2017)
 
+
 rain2018 <-
   read_excel("data/trashwheel.xlsx", sheet = "2018 Precipitation", range = "A2:B14") %>% 
   janitor::clean_names(dat = .) %>% 
   rename(.data = ., inchesrain = total) %>% 
   mutate(year = 2018)
+
 
 rain2yr = 
   bind_rows(rain2017, rain2018) %>% 
@@ -64,29 +69,86 @@ rain2yr =
 
 ```
 
-Mr. Trash Wheel has been hard at work! In 5 years (May 2014 to June 2019), Mr. Trash Wheel has collected `r sum(trashwheel$weight)` pounds of trash from the Baltimore Inner Harbor! From the trash collected and put into Mr. Trash Wheel's dumpster, the median number of sports balls was `r median(trashwheel$sports_balls)`, and the average number of chip bags was `r mean(trashwheel$chip_bags)`. That's a lot of chips. 
+Mr. Trash Wheel has been hard at work! In 5 years (May 2014 to June 2019), Mr. Trash Wheel has collected `r sum(trashwheel$weight)` tons, or `r sum(trashwheel$volume)` cubic yards, of trash from the Baltimore Inner Harbor! That is a ton of trash! Mr. Trash Wheel has filled `r nrow(trashwheel)` dumpsters! From the trash collected and put into Mr. Trash Wheel's dumpster, the median number of sports balls was `r median(trashwheel$sports_balls)` in 2017, and the average number of chip bags was `r mean(trashwheel$chip_bags)`. That's a lot of chips. 
 
-From the precipitation data collected, we can see that there were `r sum(rain2018$inchesrain)` inches of rain in 2018, compared to `r sum(rain2017$inchesrain)` in 2017. 2018 was a wet year!
+From the `r nrow(rain2yr)` observations of precipitation data collected, we can see that there were `r sum(rain2018$inchesrain)` inches of rain in 2018, compared to `r sum(rain2017$inchesrain)` in 2017. 2018 was a wet year!
 
 
 
 
 # Problem 2
+
+Cleaning the datasets: 
+
+- Standardizing year and month across datasets
+
+- Creating "president" variable with "gop", or "dem"
+
+- Merging the politician, S&P, and unemployment data sets
+
 ```{r}
 ## Pols data: the number of politicians who are Republican or Democrat at any given month
-"./data/538data/pols-month.csv"
-polsmonth = read_csv("data/538data/pols-month.csv")
 
-## Unemployment data: unemployment percentage in each month of each year
-"./data/538data/unemployment.csv"
-unemploy = read_csv("data/538data/unemployment.csv")
+"./data/538data/pols-month.csv"
+polsmonth = 
+  read_csv("data/538data/pols-month.csv") %>% 
+  separate(data = ., mon, c("year", "month", "day"), "-", convert = TRUE) %>% 
+  mutate(
+    month = month.name[month],
+    president = case_when(
+      prez_gop == 1 ~ "gop",
+      prez_dem == 1 ~ "dem"
+      )
+    ) %>% 
+  arrange(year) %>% 
+  select(-prez_dem, -prez_gop, -day)
+
 
 ## S & P stock index: closing values at the beginning of each month
+
 "./data/538data/snp.csv"
-snp = read_csv("data/538data/snp.csv")
+snp =
+  read_csv("data/538data/snp.csv") %>% 
+  separate(data = ., date, c("month", "day", "year"), "/", convert = TRUE) %>% 
+  select(-day) %>% 
+  arrange(month) %>% 
+  arrange(year) %>% 
+  mutate(
+    month = month.name[month],
+    ) %>% 
+  select(year, month, everything()) 
+  
+
+## Unemployment data: unemployment percentage in each month of each year
+  
+"./data/538data/unemployment.csv"
+unemploy <-  
+  read_csv("data/538data/unemployment.csv") %>% 
+  janitor::clean_names(dat = .) %>% 
+  pivot_longer(
+    data =, 
+    jan:dec,
+    names_to = "month",
+    values_to = "percent"
+  )
+  
+
+
+## Merging the datasets
+snppols = 
+  left_join(polsmonth, snp)
+
+
+alldata = 
+  left_join(snppols, unemploy)
+
+  
 
 
 ```
+The final dataset is an aggregate of the 3 datasets all about America: the polsmonth dataset, which contained information about politicians and their party affiliation at each month, the snp dataset, which contained information about the Standard & Poor closing index each month, and the unemployment dataset, which contained the percentage of unemployment each month. 
+
+All of the observations were kept. However, S&P is missing for many timepoints, as this dataset was the smallest, with only `r nrow(snp)` months of data from `r min(snp$year)` to `r max(snp$year)`, compared to the politician data, which had `r nrow(polsmonth)` months of data, from `r min(polsmonth$year)` to `r max(polsmonth$year)`. Thus, the resulting dataset contains `r nrow(alldata)` months of data, with comprehensive data for the politicians, and missing unemployment and S&P data for some months. 
 
 
 
